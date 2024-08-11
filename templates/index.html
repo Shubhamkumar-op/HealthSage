@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>HealthSage</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* General Styles */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+        }
+
+        /* Navbar Styles */
+        .navbar {
+            margin-bottom: 20px;
+        }
+
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+
+        /* Logo Styles */
+        .logo {
+            margin-right: 15px;
+        }
+
+        .myimg {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+        }
+
+        /* Main Heading */
+        h1 {
+            color: #0056b3;
+            font-weight: 700;
+            margin-bottom: 30px;
+        }
+
+        /* Container Form Styles */
+        .container-form {
+            background: #ffffff;
+            color: #333;
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group label {
+            font-weight: 600;
+        }
+
+        /* Results Section Styles */
+        .results-section {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+
+        .results-section h2 {
+            color: #0056b3;
+        }
+
+        .list-group-item {
+            background: #f8f9fa;
+        }
+
+        /* Error Message Styles */
+        .error-message {
+            color: #dc3545;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        /* Button Styles */
+        .btn-primary {
+            background-color: #0056b3;
+            border-color: #004494;
+        }
+
+        .btn-primary:hover {
+            background-color: #004494;
+            border-color: #003875;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            border-color: #c82333;
+        }
+
+        .btn-danger:hover {
+            background-color: #c82333;
+            border-color: #bd2130;
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 767px) {
+            .logo {
+                margin: auto;
+                text-align: center;
+            }
+
+            .navbar-brand {
+                font-size: 1.25rem;
+            }
+
+            .container-form {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <div class="logo">
+                <img class="myimg" src="{{ url_for('static', filename='Health.png') }}" alt=""/>
+            </div>
+            <a class="navbar-brand" href="#">Sage Center</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/about">About</a>
+                    </li>
+                </ul>
+                <form class="d-flex" role="search">
+                    <input class="form-control me-2" type="search" placeholder="Search">
+                    <button class="btn btn-outline-success" type="submit">Search</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Form -->
+    <h1 class="mt-4 my-4 text-center">Health Sage Center</h1>
+    <div class="container container-form my-4 mt-4">
+        <form action="/predict" method="post" id="predictionForm">
+            <div class="form-group">
+                <label for="symptoms">Select Symptoms:</label>
+                <input type="text" class="form-control" id="symptoms" name="symptoms" placeholder="Type symptoms such as itching, aching etc">
+                <div id="error-message" class="error-message" style="display: none;">Please enter valid input</div>
+            </div>
+            <br>
+            <button type="button" id="startSpeechRecognition" class="btn btn-primary" style="border-radius:20px;">
+                Start Speech Recognition
+            </button>
+            <br>
+            <!-- Display the transcribed text here -->
+            <div id="transcription"></div>
+            <br>
+            <button type="submit" class="btn btn-danger btn-lg" style="width: 100%; padding: 14px; margin-bottom: 5px;" onclick="return validateForm();">Predict</button>
+        </form>
+    </div>
+
+    <!-- Results Section -->
+    {% if predicted_disease %}
+    <div class="container results-section" id="resultsSection">
+        <h2 class="text-center">Our AI System Results</h2>
+        <div class="mb-3">
+            <label for="predictedDisease" class="form-label"><strong>Disease:</strong></label>
+            <input type="text" id="predictedDisease" class="form-control" value="{{ predicted_disease }}" readonly>
+        </div>
+        <div class="mb-3">
+            <label for="diseaseDescription" class="form-label"><strong>Description:</strong></label>
+            <textarea id="diseaseDescription" class="form-control" rows="3" readonly>{{ dis_des }}</textarea>
+        </div>
+        <div class="mb-3">
+            <label for="precautionList" class="form-label"><strong>Precautions:</strong></label>
+            <ul id="precautionList" class="list-group">
+                {% for i in my_precautions %}
+                <li class="list-group-item">{{ i }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="mb-3">
+            <label for="medicationsList" class="form-label"><strong>Medications:</strong></label>
+            <ul id="medicationsList" class="list-group">
+                {% for i in medications %}
+                <li class="list-group-item">{{ i }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="mb-3">
+            <label for="workoutsList" class="form-label"><strong>Workouts:</strong></label>
+            <ul id="workoutsList" class="list-group">
+                {% for i in workout %}
+                <li class="list-group-item">{{ i }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="mb-3">
+            <label for="dietsList" class="form-label"><strong>Diets:</strong></label>
+            <ul id="dietsList" class="list-group">
+                {% for i in my_diet %}
+                <li class="list-group-item">{{ i }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+
+    <script>
+        const startSpeechRecognitionButton = document.getElementById('startSpeechRecognition');
+        const transcriptionDiv = document.getElementById('transcription');
+
+        startSpeechRecognitionButton.addEventListener('click', startSpeechRecognition);
+
+        function startSpeechRecognition() {
+            const recognition = new webkitSpeechRecognition(); // Use webkitSpeechRecognition for compatibility
+            recognition.lang = 'en-US'; // Set the language for recognition
+
+            recognition.onresult = function (event) {
+                const result = event.results[0][0].transcript;
+                transcriptionDiv.textContent = result;
+            };
+
+            recognition.onend = function () {
+                console.log('Speech recognition ended.');
+            };
+
+            recognition.start();
+        }
+
+        function validateForm() {
+            const symptomsInput = document.getElementById('symptoms').value.trim();
+            const errorMessage = document.getElementById('error-message');
+
+            if (!symptomsInput || !isValidSymptoms(symptomsInput)) {
+                errorMessage.style.display = 'block';
+                return false;
+            }
+
+            errorMessage.style.display = 'none';
+            return true;
+        }
+
+        function isValidSymptoms(input) {
+            return input.length > 0;
+        }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
